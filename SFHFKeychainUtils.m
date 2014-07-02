@@ -194,9 +194,19 @@ static NSString *SFHFKeychainUtilsErrorDomain = @"SFHFKeychainUtilsErrorDomain";
                                 username,
                                 nil];
 			
-			NSDictionary *query = [[NSDictionary alloc] initWithObjects: objects forKeys: keys];			
+			NSDictionary *query = [[NSDictionary alloc] initWithObjects: objects forKeys: keys];
+
+            NSArray *attributeObjects = [[NSArray alloc] initWithObjects: [password dataUsingEncoding: NSUTF8StringEncoding],
+                                         (__bridge_transfer NSString *) kSecAttrAccessibleAlways,
+                                         nil];
+
+            NSArray *attributeKeys = [[NSArray alloc] initWithObjects: (__bridge_transfer NSString *) kSecValueData,
+                                      kSecAttrAccessible,
+                                      nil];
+
+            NSDictionary *attributesToUpdate = [[NSDictionary alloc] initWithObjects: attributeObjects forKeys: attributeKeys];
 			
-			status = SecItemUpdate((__bridge_retained CFDictionaryRef) query, (__bridge_retained CFDictionaryRef) [NSDictionary dictionaryWithObject: [password dataUsingEncoding: NSUTF8StringEncoding] forKey: (__bridge_transfer NSString *) kSecValueData]);
+			status = SecItemUpdate((__bridge_retained CFDictionaryRef) query, (__bridge_retained CFDictionaryRef) attributesToUpdate);
 		}
 	}
 	else 
@@ -208,7 +218,8 @@ static NSString *SFHFKeychainUtilsErrorDomain = @"SFHFKeychainUtilsErrorDomain";
                          kSecAttrService, 
                          kSecAttrLabel, 
                          kSecAttrAccount, 
-                         kSecValueData, 
+                         kSecValueData,
+                         kSecAttrAccessible,
                          nil];
 		
 		NSArray *objects = [[NSArray alloc] initWithObjects: (__bridge_transfer NSString *) kSecClassGenericPassword, 
@@ -216,6 +227,7 @@ static NSString *SFHFKeychainUtilsErrorDomain = @"SFHFKeychainUtilsErrorDomain";
                             serviceName,
                             username,
                             [password dataUsingEncoding: NSUTF8StringEncoding],
+                            (__bridge_transfer NSString *) kSecAttrAccessibleAlways,
                             nil];
 		
 		NSDictionary *query = [[NSDictionary alloc] initWithObjects: objects forKeys: keys];			
