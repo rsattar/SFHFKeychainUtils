@@ -38,7 +38,7 @@ static NSString *SFHFKeychainUtilsErrorDomain = @"SFHFKeychainUtilsErrorDomain";
 
 @implementation SFHFKeychainUtils
 
-+ (NSString *) getPasswordForUsername: (NSString *) username andServiceName: (NSString *) serviceName error: (NSError **) error {
++ (NSString *) getPasswordForUsername: (NSString *) username andServiceName: (NSString *) serviceName inAccessGroup:(NSString *) accessGroup error: (NSError **) error {
 	if (!username || !serviceName) {
 		if (error != nil) {
 			*error = [NSError errorWithDomain: SFHFKeychainUtilsErrorDomain code: -2000 userInfo: nil];
@@ -54,6 +54,9 @@ static NSString *SFHFKeychainUtilsErrorDomain = @"SFHFKeychainUtilsErrorDomain";
     NSMutableDictionary *query = [@{(__bridge_transfer NSString *) kSecClass : (__bridge_transfer NSString *) kSecClassGenericPassword,
                                     (__bridge_transfer NSString *) kSecAttrAccount : username,
                                     (__bridge_transfer NSString *) kSecAttrService : serviceName} mutableCopy];
+    if (accessGroup) {
+        query[(__bridge_transfer NSString *) kSecAttrAccessGroup] = accessGroup;
+    }
 	
 	// First do a query for attributes, in case we already have a Keychain item with no password data set.
 	// One likely way such an incorrect item could have come about is due to the previous (incorrect)
@@ -122,7 +125,7 @@ static NSString *SFHFKeychainUtilsErrorDomain = @"SFHFKeychainUtilsErrorDomain";
 	return password;
 }
 
-+ (BOOL) storeUsername: (NSString *) username andPassword: (NSString *) password forServiceName: (NSString *) serviceName updateExisting: (BOOL) updateExisting error: (NSError **) error 
++ (BOOL) storeUsername: (NSString *) username andPassword: (NSString *) password forServiceName: (NSString *) serviceName inAccessGroup:(NSString *) accessGroup updateExisting: (BOOL) updateExisting error: (NSError **) error
 {		
 	if (!username || !password || !serviceName) 
     {
@@ -135,7 +138,7 @@ static NSString *SFHFKeychainUtilsErrorDomain = @"SFHFKeychainUtilsErrorDomain";
 	
 	// See if we already have a password entered for these credentials.
 	NSError *getError = nil;
-	NSString *existingPassword = [SFHFKeychainUtils getPasswordForUsername: username andServiceName: serviceName error:&getError];
+	NSString *existingPassword = [SFHFKeychainUtils getPasswordForUsername: username andServiceName: serviceName inAccessGroup: accessGroup error:&getError];
     
 	if ([getError code] == -1999) 
     {
@@ -144,7 +147,7 @@ static NSString *SFHFKeychainUtilsErrorDomain = @"SFHFKeychainUtilsErrorDomain";
         
 		getError = nil;
 		
-		[self deleteItemForUsername: username andServiceName: serviceName error: &getError];
+		[self deleteItemForUsername: username andServiceName: serviceName inAccessGroup: accessGroup error: &getError];
         
 		if ([getError code] != noErr) 
         {
@@ -179,10 +182,13 @@ static NSString *SFHFKeychainUtilsErrorDomain = @"SFHFKeychainUtilsErrorDomain";
 		if (![existingPassword isEqualToString:password] && updateExisting) 
         {
 			//Only update if we're allowed to update existing.  If not, simply do nothing.
-            NSDictionary *query = @{(__bridge_transfer NSString *) kSecClass : (__bridge_transfer NSString *) kSecClassGenericPassword,
-                                    (__bridge_transfer NSString *) kSecAttrService : serviceName,
-                                    (__bridge_transfer NSString *) kSecAttrLabel : serviceName,
-                                    (__bridge_transfer NSString *) kSecAttrAccount : username};
+            NSMutableDictionary *query = [@{(__bridge_transfer NSString *) kSecClass : (__bridge_transfer NSString *) kSecClassGenericPassword,
+                                            (__bridge_transfer NSString *) kSecAttrService : serviceName,
+                                            (__bridge_transfer NSString *) kSecAttrLabel : serviceName,
+                                            (__bridge_transfer NSString *) kSecAttrAccount : username} mutableCopy];
+            if (accessGroup) {
+                query[(__bridge_transfer NSString *) kSecAttrAccessGroup] = accessGroup;
+            }
 
             NSDictionary *attributesToUpdate = @{(__bridge_transfer NSString *) kSecValueData : [password dataUsingEncoding: NSUTF8StringEncoding],
                                                  (__bridge_transfer NSString *) kSecAttrAccessible : (__bridge_transfer NSString *) kSecAttrAccessibleAlways};
@@ -194,14 +200,17 @@ static NSString *SFHFKeychainUtilsErrorDomain = @"SFHFKeychainUtilsErrorDomain";
     {
 		// No existing entry (or an existing, improperly entered, and therefore now
 		// deleted, entry).  Create a new entry.
-		
-		NSDictionary *query = @{(__bridge_transfer NSString *) kSecClass : (__bridge_transfer NSString *) kSecClassGenericPassword,
-                                (__bridge_transfer NSString *) kSecAttrService : serviceName,
-                                (__bridge_transfer NSString *) kSecAttrLabel : serviceName,
-                                (__bridge_transfer NSString *) kSecAttrAccount : username,
-                                (__bridge_transfer NSString *) kSecValueData : [password dataUsingEncoding: NSUTF8StringEncoding],
-                                (__bridge_transfer NSString *) kSecAttrAccessible : (__bridge_transfer NSString *) kSecAttrAccessibleAlways};
-        
+
+		NSMutableDictionary *query = [@{(__bridge_transfer NSString *) kSecClass : (__bridge_transfer NSString *) kSecClassGenericPassword,
+                                        (__bridge_transfer NSString *) kSecAttrService : serviceName,
+                                        (__bridge_transfer NSString *) kSecAttrLabel : serviceName,
+                                        (__bridge_transfer NSString *) kSecAttrAccount : username,
+                                        (__bridge_transfer NSString *) kSecValueData : [password dataUsingEncoding: NSUTF8StringEncoding],
+                                        (__bridge_transfer NSString *) kSecAttrAccessible : (__bridge_transfer NSString *) kSecAttrAccessibleAlways} mutableCopy];
+        if (accessGroup) {
+            query[(__bridge_transfer NSString *) kSecAttrAccessGroup] = accessGroup;
+        }
+
 		status = SecItemAdd((__bridge_retained CFDictionaryRef) query, NULL);
 	}
 	
@@ -216,7 +225,7 @@ static NSString *SFHFKeychainUtilsErrorDomain = @"SFHFKeychainUtilsErrorDomain";
     return YES;
 }
 
-+ (BOOL) deleteItemForUsername: (NSString *) username andServiceName: (NSString *) serviceName error: (NSError **) error 
++ (BOOL) deleteItemForUsername: (NSString *) username andServiceName: (NSString *) serviceName inAccessGroup:(NSString *) accessGroup error: (NSError **) error
 {
 	if (!username || !serviceName) 
     {
@@ -231,12 +240,15 @@ static NSString *SFHFKeychainUtilsErrorDomain = @"SFHFKeychainUtilsErrorDomain";
     {
 		*error = nil;
 	}
-    
-	NSDictionary *query = @{(__bridge_transfer NSString *) kSecClass : (__bridge_transfer NSString *) kSecClassGenericPassword,
-                            (__bridge_transfer NSString *) kSecAttrAccount : username,
-                            (__bridge_transfer NSString *) kSecAttrService : serviceName,
-                            (__bridge_transfer NSString *) kSecReturnAttributes : (id) kCFBooleanTrue};
-	
+
+	NSMutableDictionary *query = [@{(__bridge_transfer NSString *) kSecClass : (__bridge_transfer NSString *) kSecClassGenericPassword,
+                                    (__bridge_transfer NSString *) kSecAttrAccount : username,
+                                    (__bridge_transfer NSString *) kSecAttrService : serviceName,
+                                    (__bridge_transfer NSString *) kSecReturnAttributes : (id) kCFBooleanTrue} mutableCopy];
+    if (accessGroup) {
+        query[(__bridge_transfer NSString *) kSecAttrAccessGroup] = accessGroup;
+    }
+
 	OSStatus status = SecItemDelete((__bridge CFDictionaryRef) query);
 	
 	if (error != nil && status != noErr) 
@@ -249,7 +261,7 @@ static NSString *SFHFKeychainUtilsErrorDomain = @"SFHFKeychainUtilsErrorDomain";
     return YES;
 }
 
-+ (BOOL) purgeItemsForServiceName:(NSString *) serviceName error: (NSError **) error {
++ (BOOL) purgeItemsForServiceName:(NSString *) serviceName inAccessGroup:(NSString *) accessGroup error: (NSError **) error {
     if (!serviceName) 
     {
 		if (error != nil) 
@@ -267,6 +279,9 @@ static NSString *SFHFKeychainUtilsErrorDomain = @"SFHFKeychainUtilsErrorDomain";
     NSMutableDictionary *searchData = [NSMutableDictionary new];
     searchData[(__bridge id)kSecClass] = (__bridge id)kSecClassGenericPassword;
     searchData[(__bridge id)kSecAttrService] = serviceName;
+    if (accessGroup) {
+        searchData[(__bridge id)kSecAttrAccessGroup] = accessGroup;
+    }
 
     OSStatus status = SecItemDelete((__bridge CFDictionaryRef)searchData);
 
