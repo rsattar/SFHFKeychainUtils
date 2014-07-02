@@ -51,18 +51,16 @@ static NSString *SFHFKeychainUtilsErrorDomain = @"SFHFKeychainUtilsErrorDomain";
 	}
     
 	// Set up a query dictionary with the base query attributes: item type (generic), username, and service
-	
-	NSArray *keys = [[NSArray alloc] initWithObjects: (__bridge_transfer NSString *) kSecClass, kSecAttrAccount, kSecAttrService, nil];
-	NSArray *objects = [[NSArray alloc] initWithObjects: (__bridge_transfer NSString *) kSecClassGenericPassword, username, serviceName, nil];
-	
-	NSMutableDictionary *query = [[NSMutableDictionary alloc] initWithObjects: objects forKeys: keys];
+    NSMutableDictionary *query = [@{(__bridge_transfer NSString *) kSecClass : (__bridge_transfer NSString *) kSecClassGenericPassword,
+                                    (__bridge_transfer NSString *) kSecAttrAccount : username,
+                                    (__bridge_transfer NSString *) kSecAttrService : serviceName} mutableCopy];
 	
 	// First do a query for attributes, in case we already have a Keychain item with no password data set.
 	// One likely way such an incorrect item could have come about is due to the previous (incorrect)
 	// version of this code (which set the password as a generic attribute instead of password data).
 	
 	NSMutableDictionary *attributeQuery = [query mutableCopy];
-	[attributeQuery setObject: (id) kCFBooleanTrue forKey:(__bridge_transfer id) kSecReturnAttributes];
+	attributeQuery[(__bridge_transfer id) kSecReturnAttributes] = (id) kCFBooleanTrue;
     CFTypeRef attrResult = NULL;
 	OSStatus status = SecItemCopyMatching((__bridge CFDictionaryRef) attributeQuery, &attrResult);
 	//NSDictionary *attributeResult = (__bridge_transfer NSDictionary *)attrResult;
@@ -80,7 +78,7 @@ static NSString *SFHFKeychainUtilsErrorDomain = @"SFHFKeychainUtilsErrorDomain";
 	// We have an existing item, now query for the password data associated with it.
 	
 	NSMutableDictionary *passwordQuery = [query mutableCopy];
-	[passwordQuery setObject: (id) kCFBooleanTrue forKey: (__bridge_transfer id) kSecReturnData];
+    passwordQuery[(__bridge_transfer id) kSecReturnData] = (id) kCFBooleanTrue;
     CFTypeRef resData = NULL;
 	status = SecItemCopyMatching((__bridge CFDictionaryRef) passwordQuery, (CFTypeRef *) &resData);
 	NSData *resultData = (__bridge_transfer NSData *)resData;
@@ -181,30 +179,13 @@ static NSString *SFHFKeychainUtilsErrorDomain = @"SFHFKeychainUtilsErrorDomain";
 		if (![existingPassword isEqualToString:password] && updateExisting) 
         {
 			//Only update if we're allowed to update existing.  If not, simply do nothing.
-			
-			NSArray *keys = [[NSArray alloc] initWithObjects: (__bridge_transfer NSString *) kSecClass, 
-                             kSecAttrService, 
-                             kSecAttrLabel, 
-                             kSecAttrAccount, 
-                             nil];
-			
-			NSArray *objects = [[NSArray alloc] initWithObjects: (__bridge_transfer NSString *) kSecClassGenericPassword, 
-                                serviceName,
-                                serviceName,
-                                username,
-                                nil];
-			
-			NSDictionary *query = [[NSDictionary alloc] initWithObjects: objects forKeys: keys];
+            NSDictionary *query = @{(__bridge_transfer NSString *) kSecClass : (__bridge_transfer NSString *) kSecClassGenericPassword,
+                                    (__bridge_transfer NSString *) kSecAttrService : serviceName,
+                                    (__bridge_transfer NSString *) kSecAttrLabel : serviceName,
+                                    (__bridge_transfer NSString *) kSecAttrAccount : username};
 
-            NSArray *attributeObjects = [[NSArray alloc] initWithObjects: [password dataUsingEncoding: NSUTF8StringEncoding],
-                                         (__bridge_transfer NSString *) kSecAttrAccessibleAlways,
-                                         nil];
-
-            NSArray *attributeKeys = [[NSArray alloc] initWithObjects: (__bridge_transfer NSString *) kSecValueData,
-                                      kSecAttrAccessible,
-                                      nil];
-
-            NSDictionary *attributesToUpdate = [[NSDictionary alloc] initWithObjects: attributeObjects forKeys: attributeKeys];
+            NSDictionary *attributesToUpdate = @{(__bridge_transfer NSString *) kSecValueData : [password dataUsingEncoding: NSUTF8StringEncoding],
+                                                 (__bridge_transfer NSString *) kSecAttrAccessible : (__bridge_transfer NSString *) kSecAttrAccessibleAlways};
 			
 			status = SecItemUpdate((__bridge_retained CFDictionaryRef) query, (__bridge_retained CFDictionaryRef) attributesToUpdate);
 		}
@@ -214,23 +195,12 @@ static NSString *SFHFKeychainUtilsErrorDomain = @"SFHFKeychainUtilsErrorDomain";
 		// No existing entry (or an existing, improperly entered, and therefore now
 		// deleted, entry).  Create a new entry.
 		
-		NSArray *keys = [[NSArray alloc] initWithObjects: (__bridge_transfer NSString *) kSecClass, 
-                         kSecAttrService, 
-                         kSecAttrLabel, 
-                         kSecAttrAccount, 
-                         kSecValueData,
-                         kSecAttrAccessible,
-                         nil];
-		
-		NSArray *objects = [[NSArray alloc] initWithObjects: (__bridge_transfer NSString *) kSecClassGenericPassword, 
-                            serviceName,
-                            serviceName,
-                            username,
-                            [password dataUsingEncoding: NSUTF8StringEncoding],
-                            (__bridge_transfer NSString *) kSecAttrAccessibleAlways,
-                            nil];
-		
-		NSDictionary *query = [[NSDictionary alloc] initWithObjects: objects forKeys: keys];			
+		NSDictionary *query = @{(__bridge_transfer NSString *) kSecClass : (__bridge_transfer NSString *) kSecClassGenericPassword,
+                                (__bridge_transfer NSString *) kSecAttrService : serviceName,
+                                (__bridge_transfer NSString *) kSecAttrLabel : serviceName,
+                                (__bridge_transfer NSString *) kSecAttrAccount : username,
+                                (__bridge_transfer NSString *) kSecValueData : [password dataUsingEncoding: NSUTF8StringEncoding],
+                                (__bridge_transfer NSString *) kSecAttrAccessible : (__bridge_transfer NSString *) kSecAttrAccessibleAlways};
         
 		status = SecItemAdd((__bridge_retained CFDictionaryRef) query, NULL);
 	}
@@ -262,10 +232,10 @@ static NSString *SFHFKeychainUtilsErrorDomain = @"SFHFKeychainUtilsErrorDomain";
 		*error = nil;
 	}
     
-	NSArray *keys = [[NSArray alloc] initWithObjects: (__bridge_transfer NSString *) kSecClass, kSecAttrAccount, kSecAttrService, kSecReturnAttributes, nil];
-	NSArray *objects = [[NSArray alloc] initWithObjects: (__bridge_transfer NSString *) kSecClassGenericPassword, username, serviceName, kCFBooleanTrue, nil];
-	
-	NSDictionary *query = [[NSDictionary alloc] initWithObjects: objects forKeys: keys];
+	NSDictionary *query = @{(__bridge_transfer NSString *) kSecClass : (__bridge_transfer NSString *) kSecClassGenericPassword,
+                            (__bridge_transfer NSString *) kSecAttrAccount : username,
+                            (__bridge_transfer NSString *) kSecAttrService : serviceName,
+                            (__bridge_transfer NSString *) kSecReturnAttributes : (id) kCFBooleanTrue};
 	
 	OSStatus status = SecItemDelete((__bridge CFDictionaryRef) query);
 	
@@ -295,8 +265,8 @@ static NSString *SFHFKeychainUtilsErrorDomain = @"SFHFKeychainUtilsErrorDomain";
 	}
     
     NSMutableDictionary *searchData = [NSMutableDictionary new];
-    [searchData setObject:(__bridge id)kSecClassGenericPassword forKey:(__bridge id)kSecClass];
-    [searchData setObject:serviceName forKey:(__bridge id)kSecAttrService];
+    searchData[(__bridge id)kSecClass] = (__bridge id)kSecClassGenericPassword;
+    searchData[(__bridge id)kSecAttrService] = serviceName;
 
     OSStatus status = SecItemDelete((__bridge CFDictionaryRef)searchData);
 
