@@ -26,8 +26,8 @@
 //  FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 //  OTHER DEALINGS IN THE SOFTWARE.
 //
-// Updated with ARC support.  Originally forked from:
-// https://github.com/beelsebob/F1Pad/commit/66ea68e08eef0a66c706c45583e071f0a032f3c8
+// Updated with Access group support and modern(er) syntax.  Originally forked from:
+// https://github.com/kamiro/SFHFKeychainUtils/commit/de02c5bb308c392cda2a796ccd96869422c1a959
 
 
 @interface SFHFKeychainUtils : NSObject

@@ -1,6 +1,6 @@
 SFHFKeychainUtils
 =================
 
-A small ARC compliant utility to interact with Apple's Keychain Services.
+A small ARC compliant utility to interact with Apple's Keychain Services. Removes iOS 3.0 support, and adds support for using Keychain Access Groups.
 
-This was originally forked from https://github.com/beelsebob/F1Pad/commit/66ea68e08eef0a66c706c45583e071f0a032f3c8
+This was originally forked from https://github.com/kamiro/SFHFKeychainUtils
