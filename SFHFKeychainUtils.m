@@ -55,7 +55,18 @@ static NSString *SFHFKeychainUtilsErrorDomain = @"SFHFKeychainUtilsErrorDomain";
                                     (__bridge_transfer NSString *) kSecAttrAccount : username,
                                     (__bridge_transfer NSString *) kSecAttrService : serviceName} mutableCopy];
     if (accessGroup) {
+#if TARGET_IPHONE_SIMULATOR
+        // Ignore the access group if running on the iPhone simulator.
+        //
+        // Apps that are built for the simulator aren't signed, so there's no keychain access group
+        // for the simulator to check. This means that all apps can see all keychain items when run
+        // on the simulator.
+        //
+        // If a SecItem contains an access group attribute, SecItemAdd and SecItemUpdate on the
+        // simulator will return -25243 (errSecNoAccessForItem).
+#else
         query[(__bridge_transfer NSString *) kSecAttrAccessGroup] = accessGroup;
+#endif
     }
 	
 	// First do a query for attributes, in case we already have a Keychain item with no password data set.
@@ -187,7 +198,18 @@ static NSString *SFHFKeychainUtilsErrorDomain = @"SFHFKeychainUtilsErrorDomain";
                                             (__bridge_transfer NSString *) kSecAttrLabel : serviceName,
                                             (__bridge_transfer NSString *) kSecAttrAccount : username} mutableCopy];
             if (accessGroup) {
+#if TARGET_IPHONE_SIMULATOR
+				// Ignore the access group if running on the iPhone simulator.
+				//
+				// Apps that are built for the simulator aren't signed, so there's no keychain access group
+				// for the simulator to check. This means that all apps can see all keychain items when run
+				// on the simulator.
+				//
+				// If a SecItem contains an access group attribute, SecItemAdd and SecItemUpdate on the
+				// simulator will return -25243 (errSecNoAccessForItem).
+#else
                 query[(__bridge_transfer NSString *) kSecAttrAccessGroup] = accessGroup;
+#endif
             }
 
             NSDictionary *attributesToUpdate = @{(__bridge_transfer NSString *) kSecValueData : [password dataUsingEncoding: NSUTF8StringEncoding],
@@ -208,7 +230,18 @@ static NSString *SFHFKeychainUtilsErrorDomain = @"SFHFKeychainUtilsErrorDomain";
                                         (__bridge_transfer NSString *) kSecValueData : [password dataUsingEncoding: NSUTF8StringEncoding],
                                         (__bridge_transfer NSString *) kSecAttrAccessible : (__bridge_transfer NSString *) kSecAttrAccessibleAlways} mutableCopy];
         if (accessGroup) {
+#if TARGET_IPHONE_SIMULATOR
+            // Ignore the access group if running on the iPhone simulator.
+            //
+            // Apps that are built for the simulator aren't signed, so there's no keychain access group
+            // for the simulator to check. This means that all apps can see all keychain items when run
+            // on the simulator.
+            //
+            // If a SecItem contains an access group attribute, SecItemAdd and SecItemUpdate on the
+            // simulator will return -25243 (errSecNoAccessForItem).
+#else
             query[(__bridge_transfer NSString *) kSecAttrAccessGroup] = accessGroup;
+#endif
         }
 
 		status = SecItemAdd((__bridge_retained CFDictionaryRef) query, NULL);
@@ -246,7 +279,18 @@ static NSString *SFHFKeychainUtilsErrorDomain = @"SFHFKeychainUtilsErrorDomain";
                                     (__bridge_transfer NSString *) kSecAttrService : serviceName,
                                     (__bridge_transfer NSString *) kSecReturnAttributes : (id) kCFBooleanTrue} mutableCopy];
     if (accessGroup) {
+#if TARGET_IPHONE_SIMULATOR
+        // Ignore the access group if running on the iPhone simulator.
+        //
+        // Apps that are built for the simulator aren't signed, so there's no keychain access group
+        // for the simulator to check. This means that all apps can see all keychain items when run
+        // on the simulator.
+        //
+        // If a SecItem contains an access group attribute, SecItemAdd and SecItemUpdate on the
+        // simulator will return -25243 (errSecNoAccessForItem).
+#else
         query[(__bridge_transfer NSString *) kSecAttrAccessGroup] = accessGroup;
+#endif
     }
 
 	OSStatus status = SecItemDelete((__bridge CFDictionaryRef) query);
@@ -280,7 +324,18 @@ static NSString *SFHFKeychainUtilsErrorDomain = @"SFHFKeychainUtilsErrorDomain";
     searchData[(__bridge id)kSecClass] = (__bridge id)kSecClassGenericPassword;
     searchData[(__bridge id)kSecAttrService] = serviceName;
     if (accessGroup) {
+#if TARGET_IPHONE_SIMULATOR
+        // Ignore the access group if running on the iPhone simulator.
+        //
+        // Apps that are built for the simulator aren't signed, so there's no keychain access group
+        // for the simulator to check. This means that all apps can see all keychain items when run
+        // on the simulator.
+        //
+        // If a SecItem contains an access group attribute, SecItemAdd and SecItemUpdate on the
+        // simulator will return -25243 (errSecNoAccessForItem).
+#else
         searchData[(__bridge id)kSecAttrAccessGroup] = accessGroup;
+#endif
     }
 
     OSStatus status = SecItemDelete((__bridge CFDictionaryRef)searchData);
