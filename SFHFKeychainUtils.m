@@ -136,7 +136,7 @@ static NSString *SFHFKeychainUtilsErrorDomain = @"SFHFKeychainUtilsErrorDomain";
 	return password;
 }
 
-+ (BOOL) storeUsername: (NSString *) username andPassword: (NSString *) password forServiceName: (NSString *) serviceName inAccessGroup:(NSString *) accessGroup updateExisting: (BOOL) updateExisting error: (NSError **) error
++ (BOOL) storeUsername: (NSString *) username andPassword: (NSString *) password forServiceName: (NSString *) serviceName inAccessGroup:(NSString *) accessGroup updateExisting: (BOOL) updateExisting context:(NSString *) context error: (NSError **) error
 {		
 	if (!username || !password || !serviceName) 
     {
@@ -212,6 +212,10 @@ static NSString *SFHFKeychainUtilsErrorDomain = @"SFHFKeychainUtilsErrorDomain";
 #endif
             }
 
+            if (context) {
+                query[(__bridge_transfer NSString *) kSecAttrGeneric] = [context copy];
+            }
+
             NSDictionary *attributesToUpdate = @{(__bridge_transfer NSString *) kSecValueData : [password dataUsingEncoding: NSUTF8StringEncoding],
                                                  (__bridge_transfer NSString *) kSecAttrAccessible : (__bridge_transfer NSString *) kSecAttrAccessibleAlways};
 			
@@ -242,6 +246,10 @@ static NSString *SFHFKeychainUtilsErrorDomain = @"SFHFKeychainUtilsErrorDomain";
 #else
             query[(__bridge_transfer NSString *) kSecAttrAccessGroup] = accessGroup;
 #endif
+        }
+
+        if (context) {
+            query[(__bridge_transfer NSString *) kSecAttrGeneric] = [context copy];
         }
 
 		status = SecItemAdd((__bridge_retained CFDictionaryRef) query, NULL);
