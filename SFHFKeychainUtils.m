@@ -358,4 +358,53 @@ static NSString *SFHFKeychainUtilsErrorDomain = @"SFHFKeychainUtilsErrorDomain";
     return YES;
 }
 
+
++ (NSArray *) itemsForServiceName:(NSString *) serviceName inAccessGroup:(NSString *) accessGroup error: (NSError **) error {
+    if (!serviceName)
+    {
+		if (error != nil)
+        {
+			*error = [NSError errorWithDomain: SFHFKeychainUtilsErrorDomain code: -2000 userInfo: nil];
+		}
+		return NO;
+	}
+
+	if (error != nil)
+    {
+		*error = nil;
+	}
+
+    NSMutableDictionary *searchData = [NSMutableDictionary new];
+    searchData[(__bridge id)kSecClass] = (__bridge id)kSecClassGenericPassword;
+    searchData[(__bridge id)kSecAttrService] = serviceName;
+    searchData[(__bridge id)kSecMatchLimit] = (__bridge id)kSecMatchLimitAll;
+    searchData[(__bridge id)kSecReturnAttributes] = (id) kCFBooleanTrue;
+    if (accessGroup) {
+#if TARGET_IPHONE_SIMULATOR
+        // Ignore the access group if running on the iPhone simulator.
+        //
+        // Apps that are built for the simulator aren't signed, so there's no keychain access group
+        // for the simulator to check. This means that all apps can see all keychain items when run
+        // on the simulator.
+        //
+        // If a SecItem contains an access group attribute, SecItemAdd and SecItemUpdate on the
+        // simulator will return -25243 (errSecNoAccessForItem).
+#else
+        searchData[(__bridge id)kSecAttrAccessGroup] = accessGroup;
+#endif
+    }
+
+    CFTypeRef result = NULL;
+    OSStatus status = SecItemCopyMatching((__bridge CFDictionaryRef)searchData, &result);
+
+	if (error != nil && status != noErr)
+    {
+		*error = [NSError errorWithDomain: SFHFKeychainUtilsErrorDomain code: status userInfo: nil];
+
+        return nil;
+	}
+
+    return (__bridge NSArray *)result;
+}
+
 @end

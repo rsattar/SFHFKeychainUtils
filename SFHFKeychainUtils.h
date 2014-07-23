@@ -36,5 +36,5 @@
 + (BOOL) storeUsername: (NSString *) username andPassword: (NSString *) password forServiceName: (NSString *) serviceName inAccessGroup:(NSString *) accessGroup updateExisting: (BOOL) updateExisting context:(NSString *) context error: (NSError **) error;
 + (BOOL) deleteItemForUsername: (NSString *) username andServiceName: (NSString *) serviceName inAccessGroup:(NSString *) accessGroup error: (NSError **) error;
 + (BOOL) purgeItemsForServiceName:(NSString *) serviceName inAccessGroup:(NSString *) accessGroup error: (NSError **) error;
-
++ (NSArray *) itemsForServiceName:(NSString *) serviceName inAccessGroup:(NSString *) accessGroup error: (NSError **) error;
 @end
