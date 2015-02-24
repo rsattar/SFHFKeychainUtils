@@ -29,6 +29,7 @@
 // Updated with Access group support and modern(er) syntax.  Originally forked from:
 // https://github.com/kamiro/SFHFKeychainUtils/commit/de02c5bb308c392cda2a796ccd96869422c1a959
 
+#import <Foundation/Foundation.h>
 
 @interface SFHFKeychainUtils : NSObject
 
