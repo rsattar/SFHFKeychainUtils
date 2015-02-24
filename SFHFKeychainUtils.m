@@ -366,7 +366,7 @@ static NSString *SFHFKeychainUtilsErrorDomain = @"SFHFKeychainUtilsErrorDomain";
         {
 			*error = [NSError errorWithDomain: SFHFKeychainUtilsErrorDomain code: -2000 userInfo: nil];
 		}
-		return NO;
+		return nil;
 	}
 
 	if (error != nil)
