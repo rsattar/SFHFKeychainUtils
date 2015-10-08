@@ -38,7 +38,7 @@ static NSString *SFHFKeychainUtilsErrorDomain = @"SFHFKeychainUtilsErrorDomain";
 
 @implementation SFHFKeychainUtils
 
-+ (NSString *) getPasswordForUsername: (NSString *) username andServiceName: (NSString *) serviceName inAccessGroup:(NSString *) accessGroup error: (NSError **) error {
++ (NSString *) getPasswordForUsername: (NSString *) username andServiceName: (NSString *) serviceName inAccessGroup:(NSString *) accessGroup  isSynchronizable:(BOOL *) isSynchronizable error: (NSError **) error {
 	if (!username || !serviceName) {
 		if (error != nil) {
 			*error = [NSError errorWithDomain: SFHFKeychainUtilsErrorDomain code: -2000 userInfo: nil];
@@ -53,7 +53,8 @@ static NSString *SFHFKeychainUtilsErrorDomain = @"SFHFKeychainUtilsErrorDomain";
 	// Set up a query dictionary with the base query attributes: item type (generic), username, and service
     NSMutableDictionary *query = [@{(__bridge_transfer NSString *) kSecClass : (__bridge_transfer NSString *) kSecClassGenericPassword,
                                     (__bridge_transfer NSString *) kSecAttrAccount : username,
-                                    (__bridge_transfer NSString *) kSecAttrService : serviceName} mutableCopy];
+                                    (__bridge_transfer NSString *) kSecAttrService : serviceName,
+                                    (__bridge_transfer NSString *) kSecAttrSynchronizable : (__bridge_transfer NSString *) kSecAttrSynchronizableAny} mutableCopy];
     if (accessGroup) {
 #if TARGET_IPHONE_SIMULATOR
         // Ignore the access group if running on the iPhone simulator.
@@ -77,7 +78,6 @@ static NSString *SFHFKeychainUtilsErrorDomain = @"SFHFKeychainUtilsErrorDomain";
 	attributeQuery[(__bridge_transfer id) kSecReturnAttributes] = (id) kCFBooleanTrue;
     CFTypeRef attrResult = NULL;
 	OSStatus status = SecItemCopyMatching((__bridge CFDictionaryRef) attributeQuery, &attrResult);
-	//NSDictionary *attributeResult = (__bridge_transfer NSDictionary *)attrResult;
     
 	if (status != noErr) {
 		// No existing item found--simply return nil for the password
@@ -89,7 +89,17 @@ static NSString *SFHFKeychainUtilsErrorDomain = @"SFHFKeychainUtilsErrorDomain";
 		return nil;
 	}
 	
-	// We have an existing item, now query for the password data associated with it.
+	// We have an existing item, now extract whether it's synchronizable or not
+    if (attrResult != NULL) {
+        NSDictionary *attributeResult = (__bridge_transfer NSDictionary *)attrResult;
+        if (isSynchronizable != NULL) {
+            NSNumber *syncValue = attributeResult[(__bridge_transfer NSString *)kSecAttrSynchronizable];
+            *isSynchronizable = [syncValue isEqualToNumber:@YES];
+        }
+    }
+
+
+    // then query for the password data associated with it.
 	
 	NSMutableDictionary *passwordQuery = [query mutableCopy];
     passwordQuery[(__bridge_transfer id) kSecReturnData] = (id) kCFBooleanTrue;
@@ -136,7 +146,7 @@ static NSString *SFHFKeychainUtilsErrorDomain = @"SFHFKeychainUtilsErrorDomain";
 	return password;
 }
 
-+ (BOOL) storeUsername: (NSString *) username andPassword: (NSString *) password forServiceName: (NSString *) serviceName inAccessGroup:(NSString *) accessGroup updateExisting: (BOOL) updateExisting context:(NSString *) context error: (NSError **) error
++ (BOOL) storeUsername: (NSString *) username andPassword: (NSString *) password forServiceName: (NSString *) serviceName inAccessGroup:(NSString *) accessGroup label: (NSString *) label updateExisting: (BOOL) updateExisting context:(NSString *) context synchronizable:(BOOL) synchronizable error: (NSError **) error
 {		
 	if (!username || !password || !serviceName) 
     {
@@ -149,7 +159,8 @@ static NSString *SFHFKeychainUtilsErrorDomain = @"SFHFKeychainUtilsErrorDomain";
 	
 	// See if we already have a password entered for these credentials.
 	NSError *getError = nil;
-	NSString *existingPassword = [SFHFKeychainUtils getPasswordForUsername: username andServiceName: serviceName inAccessGroup: accessGroup error:&getError];
+    BOOL existingIsSynchronizable = NO;
+    NSString *existingPassword = [SFHFKeychainUtils getPasswordForUsername: username andServiceName: serviceName inAccessGroup: accessGroup isSynchronizable:&existingIsSynchronizable error:&getError];
     
 	if ([getError code] == -1999) 
     {
@@ -190,13 +201,14 @@ static NSString *SFHFKeychainUtilsErrorDomain = @"SFHFKeychainUtilsErrorDomain";
 		// We have an existing, properly entered item with a password.
 		// Update the existing item.
 		
-		if (![existingPassword isEqualToString:password] && updateExisting) 
+		if ((![existingPassword isEqualToString:password] || existingIsSynchronizable != synchronizable) && updateExisting)
         {
 			//Only update if we're allowed to update existing.  If not, simply do nothing.
             NSMutableDictionary *query = [@{(__bridge_transfer NSString *) kSecClass : (__bridge_transfer NSString *) kSecClassGenericPassword,
                                             (__bridge_transfer NSString *) kSecAttrService : serviceName,
-                                            (__bridge_transfer NSString *) kSecAttrLabel : serviceName,
-                                            (__bridge_transfer NSString *) kSecAttrAccount : username} mutableCopy];
+                                            (__bridge_transfer NSString *) kSecAttrLabel : label ? label : serviceName,
+                                            (__bridge_transfer NSString *) kSecAttrAccount : username,
+                                            (__bridge_transfer NSString *) kSecAttrSynchronizable : (__bridge_transfer NSString *) kSecAttrSynchronizableAny} mutableCopy];
             if (accessGroup) {
 #if TARGET_IPHONE_SIMULATOR
 				// Ignore the access group if running on the iPhone simulator.
@@ -217,7 +229,8 @@ static NSString *SFHFKeychainUtilsErrorDomain = @"SFHFKeychainUtilsErrorDomain";
             }
 
             NSDictionary *attributesToUpdate = @{(__bridge_transfer NSString *) kSecValueData : [password dataUsingEncoding: NSUTF8StringEncoding],
-                                                 (__bridge_transfer NSString *) kSecAttrAccessible : (__bridge_transfer NSString *) kSecAttrAccessibleAlways};
+                                                 (__bridge_transfer NSString *) kSecAttrAccessible : (__bridge_transfer NSString *) kSecAttrAccessibleAlways,
+                                                 (__bridge_transfer NSString *) kSecAttrSynchronizable : (synchronizable ? (id)kCFBooleanTrue : (id)kCFBooleanFalse)};
 			
 			status = SecItemUpdate((__bridge_retained CFDictionaryRef) query, (__bridge_retained CFDictionaryRef) attributesToUpdate);
 		}
@@ -229,10 +242,11 @@ static NSString *SFHFKeychainUtilsErrorDomain = @"SFHFKeychainUtilsErrorDomain";
 
 		NSMutableDictionary *query = [@{(__bridge_transfer NSString *) kSecClass : (__bridge_transfer NSString *) kSecClassGenericPassword,
                                         (__bridge_transfer NSString *) kSecAttrService : serviceName,
-                                        (__bridge_transfer NSString *) kSecAttrLabel : serviceName,
+                                        (__bridge_transfer NSString *) kSecAttrLabel : label ? label : serviceName,
                                         (__bridge_transfer NSString *) kSecAttrAccount : username,
                                         (__bridge_transfer NSString *) kSecValueData : [password dataUsingEncoding: NSUTF8StringEncoding],
-                                        (__bridge_transfer NSString *) kSecAttrAccessible : (__bridge_transfer NSString *) kSecAttrAccessibleAlways} mutableCopy];
+                                        (__bridge_transfer NSString *) kSecAttrAccessible : (__bridge_transfer NSString *) kSecAttrAccessibleAlways,
+                                        (__bridge_transfer NSString *) kSecAttrSynchronizable : (synchronizable ? (id)kCFBooleanTrue : (id)kCFBooleanFalse)} mutableCopy];
         if (accessGroup) {
 #if TARGET_IPHONE_SIMULATOR
             // Ignore the access group if running on the iPhone simulator.
@@ -285,7 +299,8 @@ static NSString *SFHFKeychainUtilsErrorDomain = @"SFHFKeychainUtilsErrorDomain";
 	NSMutableDictionary *query = [@{(__bridge_transfer NSString *) kSecClass : (__bridge_transfer NSString *) kSecClassGenericPassword,
                                     (__bridge_transfer NSString *) kSecAttrAccount : username,
                                     (__bridge_transfer NSString *) kSecAttrService : serviceName,
-                                    (__bridge_transfer NSString *) kSecReturnAttributes : (id) kCFBooleanTrue} mutableCopy];
+                                    (__bridge_transfer NSString *) kSecReturnAttributes : (id) kCFBooleanTrue,
+                                    (__bridge_transfer NSString *) kSecAttrSynchronizable : (__bridge_transfer NSString *) kSecAttrSynchronizableAny} mutableCopy];
     if (accessGroup) {
 #if TARGET_IPHONE_SIMULATOR
         // Ignore the access group if running on the iPhone simulator.
@@ -331,6 +346,7 @@ static NSString *SFHFKeychainUtilsErrorDomain = @"SFHFKeychainUtilsErrorDomain";
     NSMutableDictionary *searchData = [NSMutableDictionary new];
     searchData[(__bridge id)kSecClass] = (__bridge id)kSecClassGenericPassword;
     searchData[(__bridge id)kSecAttrService] = serviceName;
+    searchData[(__bridge id)kSecAttrSynchronizable] = (__bridge id)kSecAttrSynchronizableAny;
     if (accessGroup) {
 #if TARGET_IPHONE_SIMULATOR
         // Ignore the access group if running on the iPhone simulator.
@@ -379,6 +395,7 @@ static NSString *SFHFKeychainUtilsErrorDomain = @"SFHFKeychainUtilsErrorDomain";
     searchData[(__bridge id)kSecAttrService] = serviceName;
     searchData[(__bridge id)kSecMatchLimit] = (__bridge id)kSecMatchLimitAll;
     searchData[(__bridge id)kSecReturnAttributes] = (id) kCFBooleanTrue;
+    searchData[(__bridge id)kSecAttrSynchronizable] = (__bridge id)kSecAttrSynchronizableAny;
     if (accessGroup) {
 #if TARGET_IPHONE_SIMULATOR
         // Ignore the access group if running on the iPhone simulator.

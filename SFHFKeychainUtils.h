@@ -31,10 +31,11 @@
 
 #import <Foundation/Foundation.h>
 
+
 @interface SFHFKeychainUtils : NSObject
 
-+ (NSString *) getPasswordForUsername: (NSString *) username andServiceName: (NSString *) serviceName inAccessGroup:(NSString *) accessGroup error: (NSError **) error;
-+ (BOOL) storeUsername: (NSString *) username andPassword: (NSString *) password forServiceName: (NSString *) serviceName inAccessGroup:(NSString *) accessGroup updateExisting: (BOOL) updateExisting context:(NSString *) context error: (NSError **) error;
++ (NSString *) getPasswordForUsername: (NSString *) username andServiceName: (NSString *) serviceName inAccessGroup:(NSString *) accessGroup isSynchronizable:(BOOL *) isSynchronizable error: (NSError **) error;
++ (BOOL) storeUsername: (NSString *) username andPassword: (NSString *) password forServiceName: (NSString *) serviceName inAccessGroup:(NSString *) accessGroup label: (NSString *) label updateExisting: (BOOL) updateExisting context:(NSString *) context synchronizable:(BOOL) synchronizable error: (NSError **) error;
 + (BOOL) deleteItemForUsername: (NSString *) username andServiceName: (NSString *) serviceName inAccessGroup:(NSString *) accessGroup error: (NSError **) error;
 + (BOOL) purgeItemsForServiceName:(NSString *) serviceName inAccessGroup:(NSString *) accessGroup error: (NSError **) error;
 + (NSArray *) itemsForServiceName:(NSString *) serviceName inAccessGroup:(NSString *) accessGroup error: (NSError **) error;
