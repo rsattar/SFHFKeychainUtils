@@ -56,7 +56,7 @@ static NSString *SFHFKeychainUtilsErrorDomain = @"SFHFKeychainUtilsErrorDomain";
                                     (__bridge_transfer NSString *) kSecAttrService : serviceName,
                                     (__bridge_transfer NSString *) kSecAttrSynchronizable : (__bridge_transfer NSString *) kSecAttrSynchronizableAny} mutableCopy];
     if (accessGroup) {
-#if TARGET_IPHONE_SIMULATOR
+#if TARGET_OS_SIMULATOR
         // Ignore the access group if running on the iPhone simulator.
         //
         // Apps that are built for the simulator aren't signed, so there's no keychain access group
@@ -210,7 +210,7 @@ static NSString *SFHFKeychainUtilsErrorDomain = @"SFHFKeychainUtilsErrorDomain";
                                             (__bridge_transfer NSString *) kSecAttrAccount : username,
                                             (__bridge_transfer NSString *) kSecAttrSynchronizable : (__bridge_transfer NSString *) kSecAttrSynchronizableAny} mutableCopy];
             if (accessGroup) {
-#if TARGET_IPHONE_SIMULATOR
+#if TARGET_OS_SIMULATOR
 				// Ignore the access group if running on the iPhone simulator.
 				//
 				// Apps that are built for the simulator aren't signed, so there's no keychain access group
@@ -248,7 +248,7 @@ static NSString *SFHFKeychainUtilsErrorDomain = @"SFHFKeychainUtilsErrorDomain";
                                         (__bridge_transfer NSString *) kSecAttrAccessible : (__bridge_transfer NSString *) kSecAttrAccessibleAlways,
                                         (__bridge_transfer NSString *) kSecAttrSynchronizable : (synchronizable ? (id)kCFBooleanTrue : (id)kCFBooleanFalse)} mutableCopy];
         if (accessGroup) {
-#if TARGET_IPHONE_SIMULATOR
+#if TARGET_OS_SIMULATOR
             // Ignore the access group if running on the iPhone simulator.
             //
             // Apps that are built for the simulator aren't signed, so there's no keychain access group
@@ -302,7 +302,7 @@ static NSString *SFHFKeychainUtilsErrorDomain = @"SFHFKeychainUtilsErrorDomain";
                                     (__bridge_transfer NSString *) kSecReturnAttributes : (id) kCFBooleanTrue,
                                     (__bridge_transfer NSString *) kSecAttrSynchronizable : (__bridge_transfer NSString *) kSecAttrSynchronizableAny} mutableCopy];
     if (accessGroup) {
-#if TARGET_IPHONE_SIMULATOR
+#if TARGET_OS_SIMULATOR
         // Ignore the access group if running on the iPhone simulator.
         //
         // Apps that are built for the simulator aren't signed, so there's no keychain access group
@@ -348,7 +348,7 @@ static NSString *SFHFKeychainUtilsErrorDomain = @"SFHFKeychainUtilsErrorDomain";
     searchData[(__bridge id)kSecAttrService] = serviceName;
     searchData[(__bridge id)kSecAttrSynchronizable] = (__bridge id)kSecAttrSynchronizableAny;
     if (accessGroup) {
-#if TARGET_IPHONE_SIMULATOR
+#if TARGET_OS_SIMULATOR
         // Ignore the access group if running on the iPhone simulator.
         //
         // Apps that are built for the simulator aren't signed, so there's no keychain access group
@@ -397,7 +397,7 @@ static NSString *SFHFKeychainUtilsErrorDomain = @"SFHFKeychainUtilsErrorDomain";
     searchData[(__bridge id)kSecReturnAttributes] = (id) kCFBooleanTrue;
     searchData[(__bridge id)kSecAttrSynchronizable] = (__bridge id)kSecAttrSynchronizableAny;
     if (accessGroup) {
-#if TARGET_IPHONE_SIMULATOR
+#if TARGET_OS_SIMULATOR
         // Ignore the access group if running on the iPhone simulator.
         //
         // Apps that are built for the simulator aren't signed, so there's no keychain access group
